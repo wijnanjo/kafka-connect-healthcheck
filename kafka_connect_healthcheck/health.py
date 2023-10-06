@@ -31,7 +31,7 @@ class Health:
         self.kwargs = {}
         if auth and ":" in auth:
             self.kwargs["auth"] = tuple(auth.split(":"))
-            self.log_initialization_values()
+        self.log_initialization_values()
 
     def get_health_result(self):
         try:
@@ -175,3 +175,4 @@ class Health:
             logging.info("Server will healthcheck connectors and tasks for worker with id '{}'".format(self.worker_id))
         else:
             logging.warning("No worker id supplied, server will healthcheck all connectors and tasks")
+        logging.info("considered containers: '{}'".format(", ".join(self.considered_containers)))
