@@ -18,6 +18,7 @@ import signal
 import sys
 from functools import partial
 from http.server import HTTPServer
+from http.server import _get_best_family
 
 from kafka_connect_healthcheck import health
 from kafka_connect_healthcheck import helpers
@@ -36,11 +37,14 @@ def main():
     logging.info("Initializing healthcheck server...")
 
     server_class = HTTPServer
+    server_class.address_family, addr = _get_best_family('::', args.healthcheck_port)
     health_object = health.Health(args.connect_url, args.connect_worker_id, args.unhealthy_states.split(","),
                                   args.basic_auth, args.failure_threshold_percentage, args.considered_containers.split(","))
     handler = partial(RequestHandler, health_object)
-    httpd = server_class(("0.0.0.0", args.healthcheck_port), handler)
-    logging.info("Healthcheck server started at: http://localhost:{}".format(args.healthcheck_port))
+    httpd = server_class(("", args.healthcheck_port), handler)
+    host, port = httpd.socket.getsockname()[:2]
+    url_host = f'[{host}]' if ':' in host else host
+    logging.info(f"Serving HTTP on {host} port {port} (http://{url_host}:{port}/) ...")
     helpers.log_line_break()
 
     def stop(status_code, frame):
