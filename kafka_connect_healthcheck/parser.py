@@ -78,5 +78,31 @@ def get_parser():
                         dest="log_level",
                         nargs="?",
                         help="The level of logs to be shown. Default: INFO.")
+    
+    parser.add_argument("--restart-connectors-regex",
+                        default=os.environ.get("RESTART_CONNECTORS_REGEX", ""),
+                        dest="restart_connectors_regex",
+                        nargs="?",
+                        help="Regex for selecting connectors")
+    
+    parser.add_argument("--restart-error-regex",
+                    default=os.environ.get("RESTART_ERROR_REGEX", ""),
+                    dest="restart_error_regex",
+                    nargs="?",
+                    help="Regex for selecting errors")
+    
+    parser.add_argument("--stop-restarting-after-seconds",
+                default=os.environ.get("STOP_RESTARTING_AFTER_SECONDS", ""),
+                dest="stop_restarting_after_seconds",
+                type=int,
+                nargs="?",
+                help="max restart duration")
+    
+    parser.add_argument("--initial-restart-delay-seconds",
+                default=os.environ.get("INITIAL_RESTART_DELAY_SECONDS", ""),
+                dest="initial_restart_delay_seconds",
+                type=int,
+                nargs="?",
+                help="initial restart delay")
 
     return parser

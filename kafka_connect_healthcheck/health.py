@@ -22,7 +22,7 @@ from kafka_connect_healthcheck import helpers
 
 class Health:
 
-    def __init__(self, connect_url, worker_id, unhealthy_states, auth, failure_threshold_percentage, considered_containers):
+    def __init__(self, connect_url, worker_id, unhealthy_states, auth, failure_threshold_percentage, considered_containers, restarter):
         self.connect_url = connect_url
         self.worker_id = worker_id
         self.unhealthy_states = [x.upper().strip() for x in unhealthy_states]
@@ -31,6 +31,7 @@ class Health:
         self.kwargs = {}
         if auth and ":" in auth:
             self.kwargs["auth"] = tuple(auth.split(":"))
+        self.restarter = restarter
         self.log_initialization_values()
 
     def get_health_result(self):
@@ -55,8 +56,8 @@ class Health:
             if container_count > 0:
                 health_result["failure_rate"] = failure_count / container_count
             else:
-                health_result["failure_rate"] = 0.0
-
+                health_result["failure_rate"] = 0.0\
+                
             health_result["failure_threshold"] = self.failure_threshold
             health_result["healthy"] = health_result["failure_rate"] <= health_result["failure_threshold"]
 
@@ -122,10 +123,18 @@ class Health:
                             "worker_id": task["worker_id"],
                             "trace": task.get("trace", None)
                         })
+                        
+                        if self.restarter.should_restart_task(task, connector):
+                            self.restart_task(task, connector)
                     else:
                         logging.info("Connector '{}' task '{}' is healthy in state: {}".format(
                             connector["name"], task["id"], task["state"]
                         ))
+                        self.restarter.mark_task_healthy(task, connector)
+
+    def restart_task(self, task, connector):
+        requests.post("{}/connectors/{}/tasks/{}/restart".format(self.connect_url, connector["name"], task["id"]), **self.kwargs)
+        logging.info("Task restarted")
 
     def get_connectors_health(self, connector_names):
         statuses = []
@@ -176,3 +185,4 @@ class Health:
         else:
             logging.warning("No worker id supplied, server will healthcheck all connectors and tasks")
         logging.info("considered containers: '{}'".format(", ".join(self.considered_containers)))
+

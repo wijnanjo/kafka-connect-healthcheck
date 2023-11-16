@@ -23,6 +23,7 @@ from http.server import _get_best_family
 from kafka_connect_healthcheck import health
 from kafka_connect_healthcheck import helpers
 from kafka_connect_healthcheck import parser
+from kafka_connect_healthcheck.restarter import Restarter
 from kafka_connect_healthcheck.handler import RequestHandler
 
 
@@ -36,10 +37,13 @@ def main():
 
     logging.info("Initializing healthcheck server...")
 
+    restarter = Restarter(args.restart_connectors_regex, args.restart_error_regex, args.stop_restarting_after_seconds, args.initial_restart_delay_seconds)
+
     server_class = HTTPServer
     server_class.address_family, addr = _get_best_family('::', args.healthcheck_port)
     health_object = health.Health(args.connect_url, args.connect_worker_id, args.unhealthy_states.split(","),
-                                  args.basic_auth, args.failure_threshold_percentage, args.considered_containers.split(","))
+                                  args.basic_auth, args.failure_threshold_percentage, args.considered_containers.split(","),
+                                  restarter)
     handler = partial(RequestHandler, health_object)
     httpd = server_class(("", args.healthcheck_port), handler)
     host, port = httpd.socket.getsockname()[:2]

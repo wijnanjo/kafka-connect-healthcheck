@@ -9,7 +9,8 @@ with open("kafka_connect_healthcheck/version.py") as f:
     exec(f.read(), meta)
 
 requires = [
-    "requests>=2.21.0"
+    "requests>=2.21.0",
+    "tenacity"
 ]
 
 setuptools.setup(
